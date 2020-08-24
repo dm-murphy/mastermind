@@ -1,11 +1,11 @@
-#Game class
+
 class Game
 
   def initialize
     @player = Player.new
     @code = Code.new
   end
-    
+
   def show_rules
     puts <<-HEREDOC
     
@@ -103,35 +103,28 @@ class Code
 end
 
 class Player
-  attr_reader :current_guess
+  attr_reader :current_guess, :guess_counter
 
   def initialize
     @guess_counter = 0
   end
-  
+
   def take_guess
-    puts 'Guess the code! Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
-    @current_guess = gets.chomp.each_char.map {|c| c.to_i}
-    if @current_guess.all? { |i| i.is_a?(Integer) }
-      # Check if numbers between 1 - 6
-      # Check if only 4 digits in array
-      # Put these checks in separate method
-      puts 'Valid!'
-      @guess_counter += 1
-    else
-      puts "That's not right!"
+    loop do
+      puts 'Guess the code! Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
+      @current_guess = gets.chomp.each_char.map {|c| c.to_i}
+      if check_valid
+        @guess_counter += 1
+        break
+      else
+        puts "That's not right!"
+      end
     end
   end
-  
-  #Check Valid
-    #See if user guess contains 4 numbers between 1 - 6
 
-  #Increase Counter
-    #Increase number of guesses by 1
-
-  #Show Counter
-    #Return counter variable when called
-
+  def check_valid
+    @current_guess.all? { |i| i.is_a?(Integer) && i.between?(1, 6) } && @current_guess.length == 4
+  end
 end
 
 mastermind = Game.new
