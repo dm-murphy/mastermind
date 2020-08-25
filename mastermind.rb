@@ -1,6 +1,5 @@
-#Problem is I am changing my instance variable for the secret_code and while I want to do that to run the secondary check on ?, I don't want it to stay that way
-#outside those specific methods. So I want to learn how scope works in this scenario and if I should be using something instead of an instance variable set to a new 
-#variable, or if I should be locking down certain methods as private.
+#Next add color to numbers and to symbols
+#Then replan / rewrite algorithm and redo pseudo code for AI side of project
 
 class Game
 
@@ -14,17 +13,14 @@ class Game
     
     Welcome to Mastermind!
 
-    You have 12 turns to break the computer's code. 
-    
+    You have 12 turns to break the computer's code.
     For each turn, enter a 4 digit guess choosing from the numbers 1 - 6. 
-    
     A number can be used more than once.
 
     If you guess incorrectly, you will be given clues to help with
     your next guess.
 
     May the odds be ever in your favor.
-
     HEREDOC
   end
   
@@ -52,7 +48,8 @@ class Game
       else
         puts "Wrong!"
         p current_guess
-        check_clues(current_code, current_guess)
+        clue_code = current_code.slice(0..-1)
+        check_clues(clue_code, current_guess)
         break if check_counter_12
       end
       puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
@@ -61,7 +58,7 @@ class Game
 
   def check_counter_12
     if @player.guess_counter == 11
-      puts "Warning, this is your final turn to guess!"
+      puts "WARNING, this is your final turn to guess!"
     elsif @player.guess_counter == 12
       puts "Game over, you lose!"
       true
@@ -75,7 +72,8 @@ class Game
   end
 
   def get_code
-    @code.secret_code
+    #@code.secret_code
+    @code.secret_code.slice(0..-1)
   end
 
   def check_guess(code, guess)
@@ -84,48 +82,28 @@ class Game
   
   def check_clues(code, guess)
     show_keys
-    test_check_exclamations(code, guess)
-    test_check_questions(code, guess)
-    #check_digit_position(code, guess)
-    #check_digit_only(code, guess)
+    check_exclamations(code, guess)
+    check_questions(code, guess)
+    puts
   end
 
-  def test_check_exclamations(code, guess)
+  def check_exclamations(code, guess)
     guess.each_with_index.map do |guess_char, index|
       if code[index] == guess_char
         print "!"
         code[index] = "!"
+        guess[index] = "X"
       end
-      puts
     end
   end
 
-  def test_check_questions(code, guess)
+  def check_questions(code, guess)
     guess.each_with_index.map do |guess_char, index|
       if code.include? guess_char
         print "?"
       end
-      puts
     end
   end
-
-  #def check_digit_position(code, guess)
-    #guess.each_with_index.map do |guess_char, index|
-      #if code[index] == guess_char
-        #print "!"
-      #end
-      #puts
-    #end
-  #end
-  
-  #def check_digit_only(code, guess)
-    #guess.each_with_index.map do |guess_char, index|
-      #if (code[index] != guess_char) && (code.include? guess_char)
-        #puts "?"
-      #end
-      #puts
-    #end
-  #end
 end
 
 class Code
