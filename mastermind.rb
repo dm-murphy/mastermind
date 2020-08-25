@@ -1,3 +1,6 @@
+#Problem is I am changing my instance variable for the secret_code and while I want to do that to run the secondary check on ?, I don't want it to stay that way
+#outside those specific methods. So I want to learn how scope works in this scenario and if I should be using something instead of an instance variable set to a new 
+#variable, or if I should be locking down certain methods as private.
 
 class Game
 
@@ -11,12 +14,14 @@ class Game
     
     Welcome to Mastermind!
 
-    You have 12 turns to break the computer's code. For each turn, 
-    enter a 4 digit guess choosing from the numbers 1 - 6. A number
-    can be used more than once.
+    You have 12 turns to break the computer's code. 
+    
+    For each turn, enter a 4 digit guess choosing from the numbers 1 - 6. 
+    
+    A number can be used more than once.
 
     If you guess incorrectly, you will be given clues to help with
-    you next guess.
+    your next guess.
 
     May the odds be ever in your favor.
 
@@ -37,69 +42,98 @@ class Game
   def start_game
     show_rules
     show_keys
-    get_code
-    @player.take_guess
-    p @player.current_guess
-    #Get Code
-    #Loop
-      #Get Guess
-      #Check Guess
-        #If true display winner result
-        #Else Display Guess
-             #Check Clues
-             #Check Counter 12
+    current_code = get_code
+    puts "Debugging hint: the secret code is #{current_code}" # Keep for debugging and delete later
+    loop do
+      current_guess = get_guess
+      if check_guess(current_code, current_guess)
+        puts "You win. You are the master now!"
+        break
+      else
+        puts "Wrong!"
+        p current_guess
+        check_clues(current_code, current_guess)
+        break if check_counter_12
+      end
+      puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
+    end
   end
-  
-  #Check Clues
-    #Show Keys
-    #Check D&P
-    #Check DO
 
-  #Check Counter 12
-    #Call player instance Show Counter
-    #If Counter variable equals 11, display warning final guess message
-    #If Counter variable equals 12, display game over message
+  def check_counter_12
+    if @player.guess_counter == 11
+      puts "Warning, this is your final turn to guess!"
+    elsif @player.guess_counter == 12
+      puts "Game over, you lose!"
+      true
+    end
+  end
 
-  #Check D&P (Correct Digit and Position)
-    #If Player guess has any correct digits in correct index position of code array,
-      #then return that number of D&P symbols
-    
-  #Check DO (Correct Digit Only)
-    #If Player guess has any correct digits but in wrong index position of code array,
-      #then return that number of DO symbols
-
-  #Get Guess
-    #Loop
-      #Display prompt message to player for guess
-      #Call player instance Take Guess
-        #If true, assign to Current Guess Variable and break
-        #Else, reprompt message
+  def get_guess
+    puts 'Guess the code! Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
+    @player.take_guess
+    @player.current_guess
+  end
 
   def get_code
-    current_code = @code.show_code
-    p current_code
-    #Call code instance Show Code
-    #Set Show Code to Code Variable
+    @code.secret_code
   end
 
-  #Check Guess (Code Variable, Current Guess Variable)
-    #Check if Code Variable equals Current Guess Variable
+  def check_guess(code, guess)
+    code == guess
+  end
   
-  #Display Guess (Current Guess Variable)
-    #Show color coded version of Current Guess Variable
+  def check_clues(code, guess)
+    show_keys
+    test_check_exclamations(code, guess)
+    test_check_questions(code, guess)
+    #check_digit_position(code, guess)
+    #check_digit_only(code, guess)
+  end
 
+  def test_check_exclamations(code, guess)
+    guess.each_with_index.map do |guess_char, index|
+      if code[index] == guess_char
+        print "!"
+        code[index] = "!"
+      end
+      puts
+    end
+  end
+
+  def test_check_questions(code, guess)
+    guess.each_with_index.map do |guess_char, index|
+      if code.include? guess_char
+        print "?"
+      end
+      puts
+    end
+  end
+
+  #def check_digit_position(code, guess)
+    #guess.each_with_index.map do |guess_char, index|
+      #if code[index] == guess_char
+        #print "!"
+      #end
+      #puts
+    #end
+  #end
+  
+  #def check_digit_only(code, guess)
+    #guess.each_with_index.map do |guess_char, index|
+      #if (code[index] != guess_char) && (code.include? guess_char)
+        #puts "?"
+      #end
+      #puts
+    #end
+  #end
 end
 
 class Code
+  attr_reader :secret_code
 
   def initialize
     @secret_code = Array.new(4) { rand(1..6) }
   end
-    
-  def show_code
-    @secret_code
-  end
-
 end
 
 class Player
@@ -111,7 +145,6 @@ class Player
 
   def take_guess
     loop do
-      puts 'Guess the code! Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
       @current_guess = gets.chomp.each_char.map {|c| c.to_i}
       if check_valid
         @guess_counter += 1
