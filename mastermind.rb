@@ -1,9 +1,17 @@
+# frozen_string_literal: true
 
 class Game
 
   def initialize
-    @player = Player.new
     @code = Code.new
+    @player = Player.new
+  end
+
+  def set_up_game
+    show_rules
+    show_keys
+    current_code = code
+    start_game(current_code)
   end
 
   def show_rules
@@ -21,10 +29,14 @@ class Game
 
     Numbers can be used more than once.
 
+    For example:
+    
+    \e[41m 1 \e[0m \e[42m 2 \e[0m \e[42m 2 \e[0m \e[45m 5 \e[0m
+
     If you guess incorrectly, you will be given clues for your next guess.
     HEREDOC
   end
-  
+
   def show_keys
     puts <<-HEREDOC
 
@@ -34,80 +46,35 @@ class Game
 
     HEREDOC
   end
-  
-  def start_game
-    show_rules
-    show_keys
-    current_code = get_code
+
+  def code
+    @code.secret_code.slice(0..-1)
+  end
+
+  def start_game(current_code)
     #puts "Debugging hint: the secret code is #{current_code}" # Keep for debugging and delete later
     loop do
-      current_guess = get_guess
+      current_guess = guess
       display_guess(current_guess)
-      if check_guess(current_code, current_guess)
-        puts "Correct. Master. Mind."
-        break
-      else
-        puts "Incorrect."
-        clue_code = current_code.slice(0..-1)
-        check_clues(clue_code, current_guess)
-        break if check_counter_12
-      end
+      give_clues(current_code, current_guess)
       #puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
+      break if correct_guess(current_code, current_guess)
+      break if check_counter_12
     end
   end
 
-  def check_counter_12
-    if @player.guess_counter == 11
-      puts "WARNING: This is your final turn to guess."
-    elsif @player.guess_counter == 12
-      puts "Game over, you lose. Master. Minded."
-      true
-    end
-  end
-
-  def get_guess
+  def guess
     puts 'Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
     @player.take_guess
     @player.current_guess
   end
 
-  def get_code
-    @code.secret_code.slice(0..-1)
-  end
-
-  def check_guess(code, guess)
-    code == guess
-  end
-  
-  def check_clues(code, guess)
-    check_exclamations(code, guess)
-    check_questions(code, guess)
-    puts
-    show_keys
-  end
-
-  def check_exclamations(code, guess)
-    guess.each_with_index.map do |guess_char, index|
-      if code[index] == guess_char
-        print "\e[32m\!\e[0m " #Print green exclammation mark
-        code[index] = "!"
-        guess[index] = "X"
-      end
-    end
-  end
-
-  def check_questions(code, guess)
-    guess.each_with_index.map do |guess_char, index|
-      if code.include? guess_char
-        print "\e[91m\?\e[0m " #Print red question mark
-      end
-    end
-  end
-
   def display_guess(current_guess)
+    puts
     puts "Guess Number #{@player.guess_counter}: "
     puts
     color_guess(current_guess)
+    puts
     puts
   end
 
@@ -122,6 +89,61 @@ class Game
                  }
     current_guess.each do |n|
       print color_code[n]
+    end
+  end
+
+  def give_clues(current_code, current_guess)
+    # Move clue_code to a new method, and where to call it from?
+    clue_code = current_code.slice(0..-1)
+    clue_guess = current_guess.slice(0..-1)
+    check_clues(clue_code, clue_guess)
+  end
+
+  def check_clues(clue_code, clue_guess)
+    check_exclamations(clue_code, clue_guess)
+    check_questions(clue_code, clue_guess)
+    puts
+    show_keys
+  end
+
+  def check_exclamations(clue_code, clue_guess)
+    clue_guess.each_with_index.map do |guess_char, index|
+      next unless clue_code[index] == guess_char
+
+      print "\e[32m\!\e[0m " #Print green exclammation mark
+      clue_code[index] = '!'
+      clue_guess[index] = 'X'
+    end
+  end
+
+  def check_questions(clue_code, clue_guess)
+    clue_guess.each.map do |guess_char|
+      if clue_code.include? guess_char
+        print "\e[91m\?\e[0m " #Print red question mark
+      end
+    end
+  end
+
+  def correct_guess(current_code, current_guess)
+    if check_guess(current_code, current_guess)
+      puts 'Correct. Master. Mind.'
+      true
+    else
+      puts 'Incorrect. Guess again.'
+      puts
+    end
+  end
+
+  def check_guess(current_code, current_guess)
+    current_code == current_guess
+  end
+
+  def check_counter_12
+    if @player.guess_counter == 11
+      puts 'WARNING: This is your final turn to guess.'
+    elsif @player.guess_counter == 12
+      puts 'Game over, you lose. Master. Minded.'
+      true
     end
   end
 end
@@ -143,7 +165,7 @@ class Player
 
   def take_guess
     loop do
-      @current_guess = gets.chomp.each_char.map {|c| c.to_i}
+      @current_guess = gets.chomp.each_char.map { |c| c.to_i }
       if check_valid
         @guess_counter += 1
         break
@@ -159,4 +181,4 @@ class Player
 end
 
 mastermind = Game.new
-mastermind.start_game
+mastermind.set_up_game
