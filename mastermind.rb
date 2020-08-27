@@ -1,25 +1,18 @@
 # frozen_string_literal: true
 
+# Set up of rules, keys and rounds
 class Game
 
   def initialize
-    @code = Code.new
-    @player = Player.new
-  end
-
-  def set_up_game
     show_rules
     show_keys
-    current_code = code
-    start_game(current_code)
+    new_round
   end
 
   def show_rules
     puts <<-HEREDOC
     
     Welcome to Mastermind!
-
-    May the odds be ever in your favor.
 
     You have 12 turns to break the code.
 
@@ -47,19 +40,41 @@ class Game
     HEREDOC
   end
 
+  def new_round
+    @round = Round.new
+  end
+end
+
+# Creates new code, new player, and loops through game
+class Round < Game
+
+  def initialize
+    @code = Code.new
+    @player = Player.new
+    start_game
+  end
+
+  def start_game
+    puts 'May the odds be ever in your favor.'
+    puts
+    current_code = code
+    begin_game_loop(current_code)
+    continue
+  end
+
   def code
     @code.secret_code.slice(0..-1)
   end
 
-  def start_game(current_code)
-    #puts "Debugging hint: the secret code is #{current_code}" # Keep for debugging and delete later
+  def begin_game_loop(current_code)
+    puts "Debugging hint: the secret code is #{current_code}" # Keep for debugging and delete later
     loop do
       current_guess = guess
       display_guess(current_guess)
-      give_clues(current_code, current_guess)
+      display_clues(current_code, current_guess)
       #puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
-      break if correct_guess(current_code, current_guess)
       break if check_counter_12
+      break if correct_guess(current_code, current_guess)
     end
   end
 
@@ -92,18 +107,17 @@ class Game
     end
   end
 
-  def give_clues(current_code, current_guess)
-    # Move clue_code to a new method, and where to call it from?
+  def display_clues(current_code, current_guess)
     clue_code = current_code.slice(0..-1)
     clue_guess = current_guess.slice(0..-1)
     check_clues(clue_code, clue_guess)
+    puts
+    show_keys
   end
 
   def check_clues(clue_code, clue_guess)
     check_exclamations(clue_code, clue_guess)
     check_questions(clue_code, clue_guess)
-    puts
-    show_keys
   end
 
   def check_exclamations(clue_code, clue_guess)
@@ -127,6 +141,7 @@ class Game
   def correct_guess(current_code, current_guess)
     if check_guess(current_code, current_guess)
       puts 'Correct. Master. Mind.'
+      puts
       true
     else
       puts 'Incorrect. Guess again.'
@@ -141,13 +156,29 @@ class Game
   def check_counter_12
     if @player.guess_counter == 11
       puts 'WARNING: This is your final turn to guess.'
+      puts
     elsif @player.guess_counter == 12
       puts 'Game over, you lose. Master. Minded.'
+      puts
       true
+    end
+  end
+
+  def continue
+    puts 'Continue? Enter y to start a new game.'
+    answer = gets.chomp
+    if answer.downcase == 'y'
+      puts
+      puts "Let's play again."
+      puts
+      new_round
+    else
+      puts 'Goodbye.'
     end
   end
 end
 
+# Generates random secret_code for the round
 class Code
   attr_reader :secret_code
 
@@ -156,6 +187,7 @@ class Code
   end
 end
 
+# Creates human player and takes in guesses
 class Player
   attr_reader :current_guess, :guess_counter
 
@@ -180,5 +212,4 @@ class Player
   end
 end
 
-mastermind = Game.new
-mastermind.set_up_game
+Game.new
