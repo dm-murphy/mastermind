@@ -1,3 +1,12 @@
+#2 types of rounds
+#Codebreaker Round
+#Codemaster Round
+#They could inherit the methods of the Round class
+#Would Game class launch the New Codebreaker Round or the New Codemaster Round?
+#Or should Game launch Round and then Round launch either Codebreaker or Codemaster
+
+
+
 # frozen_string_literal: true
 
 # Set up of rules, keys and rounds
