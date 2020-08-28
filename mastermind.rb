@@ -82,8 +82,8 @@ class Round < Game
       display_guess(current_guess)
       display_clues(current_code, current_guess)
       #puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
-      break if check_counter_12
       break if correct_guess(current_code, current_guess)
+      break if check_counter_12
     end
   end
 
@@ -153,7 +153,7 @@ class Round < Game
       puts
       true
     else
-      puts 'Incorrect. Guess again.'
+      puts 'Incorrect.'
       puts
     end
   end
