@@ -1,21 +1,17 @@
-#2 types of rounds
-#Codebreaker Round
-#Codemaster Round
-#They could inherit the methods of the Round class
-#Would Game class launch the New Codebreaker Round or the New Codemaster Round?
-#Or should Game launch Round and then Round launch either Codebreaker or Codemaster
-
-
+# Need some sort of delay to show computer guesses
+# Need to format computer guesses into color codes
+# Need to add guess counter for computer
+# Do all of that first before improving computer logic
 
 # frozen_string_literal: true
 
-# Set up of rules, keys and rounds
+# Set up of rules, keys and chooses which round to play
 class Game
 
   def initialize
     show_rules
     show_keys
-    new_round
+    choose_game
   end
 
   def show_rules
@@ -49,26 +45,55 @@ class Game
     HEREDOC
   end
 
-  def new_round
-    @round = Round.new
+  def choose_game
+    loop do
+      puts "Would you like to be the Code Master (m) or Code Breaker (b)?"
+      result = gets.chomp
+      if result.downcase == 'm'
+        puts
+        new_master_round
+        break
+      elsif result.downcase == 'b'
+        puts
+        new_breaker_round
+        break
+      else
+        puts "Come again?" 
+      end
+    end
+  end
+
+  def new_breaker_round
+    @breaker_round = BreakerRound.new
+  end
+
+  def new_master_round
+    @master_round = MasterRound.new
   end
 end
 
-# Creates new code, new player, and loops through game
-class Round < Game
+# Creates a Code Breaker round with new code, new player, and loops through game
+class BreakerRound < Game
 
   def initialize
     @code = Code.new
     @player = Player.new
+    @turn_counter = 0
     start_game
   end
 
   def start_game
     puts 'May the odds be ever in your favor.'
     puts
+    puts 'The Code Master has chosen a code.'
+    puts
     current_code = code
     begin_game_loop(current_code)
     continue
+  end
+
+  def increase_counter
+    @turn_counter += 1
   end
 
   def code
@@ -78,7 +103,8 @@ class Round < Game
   def begin_game_loop(current_code)
     puts "Debugging hint: the secret code is #{current_code}" # Keep for debugging and delete later
     loop do
-      current_guess = guess
+      increase_counter
+      current_guess = ask_player
       display_guess(current_guess)
       display_clues(current_code, current_guess)
       #puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
@@ -87,23 +113,22 @@ class Round < Game
     end
   end
 
-  def guess
-    puts 'Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
-    @player.take_guess
-    @player.current_guess
+  def ask_player
+    @player.enter_code
+    @player.inputted_code
   end
 
   def display_guess(current_guess)
     puts
-    puts "Guess Number #{@player.guess_counter}: "
+    puts "Guess Number #{@turn_counter}: "
     puts
-    color_guess(current_guess)
+    color_code(current_guess)
     puts
     puts
   end
 
-  def color_guess(current_guess)
-    color_code = { 
+  def color_code(code)
+    color_key = { 
                    1 => "\e[41m 1 \e[0m ", #red
                    2 => "\e[42m 2 \e[0m ", #green
                    3 => "\e[43m 3 \e[0m ", #brown
@@ -111,8 +136,8 @@ class Round < Game
                    5 => "\e[45m 5 \e[0m ", #magenta
                    6 => "\e[46m 6 \e[0m "  #cyan
                  }
-    current_guess.each do |n|
-      print color_code[n]
+    code.each do |n|
+      print color_key[n]
     end
   end
 
@@ -163,10 +188,10 @@ class Round < Game
   end
 
   def check_counter_12
-    if @player.guess_counter == 11
+    if @turn_counter == 11
       puts 'WARNING: This is your final turn to guess.'
       puts
-    elsif @player.guess_counter == 12
+    elsif @turn_counter == 12
       puts 'Game over, you lose. Master. Minded.'
       puts
       true
@@ -180,44 +205,83 @@ class Round < Game
       puts
       puts "Let's play again."
       puts
-      new_round
+      choose_game
     else
       puts 'Goodbye.'
     end
   end
 end
 
-# Generates random secret_code for the round
+# Generates random secret_code for the Code Breaker round
 class Code
   attr_reader :secret_code
 
   def initialize
     @secret_code = Array.new(4) { rand(1..6) }
   end
+
 end
 
-# Creates human player and takes in guesses
+# Creates human player and takes in guesses for the Code Breaker round
 class Player
-  attr_reader :current_guess, :guess_counter
+  attr_reader :inputted_code
 
-  def initialize
-    @guess_counter = 0
-  end
-
-  def take_guess
+  def enter_code
     loop do
-      @current_guess = gets.chomp.each_char.map { |c| c.to_i }
-      if check_valid
-        @guess_counter += 1
-        break
-      else
-        puts "That's not right!"
-      end
+      puts 'Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
+      @inputted_code = gets.chomp.each_char.map { |c| c.to_i }
+      break if check_valid
+
+      puts "That's not valid."
     end
   end
 
   def check_valid
-    @current_guess.all? { |i| i.is_a?(Integer) && i.between?(1, 6) } && @current_guess.length == 4
+    @inputted_code.all? { |i| i.is_a?(Integer) && i.between?(1, 6) } && @inputted_code.length == 4
+  end
+end
+
+class MasterRound < BreakerRound
+  
+  def initialize
+    @player = Player.new
+    start_master
+  end
+
+  def start_master
+    player_code = ask_player
+    show_player_code(player_code)
+    computer_guesses
+  end
+
+  def show_player_code(player_code)
+    puts
+    color_code(player_code)
+    puts
+  end
+
+  def computer_guesses
+   puts 'The computer will now try to break your code...'
+   guess_code
+  end
+
+  def guess_code
+    guess_counter = 0
+    loop do
+      computer_guess = Array.new(4) { rand(1..6) }
+      guess_counter += 1
+      sleep(1)
+      color_code(computer_guess)
+      if computer_guess == @player.inputted_code
+        puts "The computer broke the code."
+        break
+      elsif guess_counter == 12
+        puts "Game over. The computer failed!"
+        break
+      else
+        puts "Computer's are wrong sometimes..."
+      end
+    end
   end
 end
 
