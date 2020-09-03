@@ -1,7 +1,9 @@
-# Need some sort of delay to show computer guesses
-# Need to format computer guesses into color codes
-# Need to add guess counter for computer
-# Do all of that first before improving computer logic
+# Computer AI Logic
+# Create set of all possible code combinations
+# Make this into a new array of all possibilities
+# Make first guess [1,1,2,2]
+# Then once the computer receives the feedback, it eliminates from the original set
+# all guesses that could not satisfy the combination of that guess and the given feedback.
 
 # frozen_string_literal: true
 
@@ -38,9 +40,9 @@ class Game
   def show_keys
     puts <<-HEREDOC
 
-    Each \e[32m\!\e[0m means you guessed a correct number in a correct position.
-    Each \e[91m\?\e[0m means you guessed a correct number but in the wrong position.
-    If no symbols appear, you didn't guess any correct numbers.
+    Each \e[32m\!\e[0m means a correct number in a correct position.
+    Each \e[91m\?\e[0m means a correct number but in the wrong position.
+    If no symbols appear, there are no correct numbers.
 
     HEREDOC
   end
@@ -105,7 +107,7 @@ class BreakerRound < Game
     loop do
       increase_counter
       current_guess = ask_player
-      display_guess(current_guess)
+      display_guess(current_guess, @turn_counter)
       display_clues(current_code, current_guess)
       #puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
       break if correct_guess(current_code, current_guess)
@@ -118,9 +120,9 @@ class BreakerRound < Game
     @player.inputted_code
   end
 
-  def display_guess(current_guess)
+  def display_guess(current_guess, counter)
     puts
-    puts "Guess Number #{@turn_counter}: "
+    puts "Guess Number #{counter}: "
     puts
     color_code(current_guess)
     puts
@@ -245,44 +247,51 @@ class MasterRound < BreakerRound
   
   def initialize
     @player = Player.new
+    @player_code = ask_player
     start_master
   end
 
   def start_master
-    player_code = ask_player
-    show_player_code(player_code)
-    computer_guesses
+    show_player_code
+    start_computer_turn
+    continue
   end
 
-  def show_player_code(player_code)
+  def show_player_code
     puts
-    color_code(player_code)
+    color_code(@player_code)
     puts
   end
 
-  def computer_guesses
-   puts 'The computer will now try to break your code...'
-   guess_code
-  end
-
-  def guess_code
+  def start_computer_turn
+    puts 'The computer will now try to break your code...'
+    puts
     guess_counter = 0
     loop do
-      computer_guess = Array.new(4) { rand(1..6) }
+      computer_guess = take_guess
       guess_counter += 1
-      sleep(1)
-      color_code(computer_guess)
-      if computer_guess == @player.inputted_code
-        puts "The computer broke the code."
+      display_guess(computer_guess, guess_counter)
+      display_clues(@player_code, computer_guess)
+      sleep(2)
+      if computer_guess == @player_code
+        puts 'Game over. The computer broke the code.'
         break
       elsif guess_counter == 12
-        puts "Game over. The computer failed!"
+        puts 'You win! The computer failed to break the code.'
         break
-      else
-        puts "Computer's are wrong sometimes..."
       end
     end
   end
+
+  def take_guess
+    Array.new(4) { rand(1..6) }
+  end
+
+  def take_better_guess
+    Array.new(4) 
+  end
+
+
 end
 
 Game.new
