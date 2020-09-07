@@ -1,10 +1,3 @@
-# Computer AI Logic
-# Create set of all possible code combinations
-# Make this into a new array of all possibilities
-# Make first guess [1,1,2,2]
-# Then once the computer receives the feedback, it eliminates from the original set
-# all guesses that could not satisfy the combination of that guess and the given feedback.
-
 # frozen_string_literal: true
 
 # Set up of rules, keys and chooses which round to play
@@ -31,7 +24,7 @@ class Game
 
     For example:
     
-    \e[41m 1 \e[0m \e[42m 2 \e[0m \e[42m 2 \e[0m \e[45m 5 \e[0m
+    \e[41m 1 \e[0m \e[43m 3 \e[0m \e[43m 3 \e[0m \e[45m 5 \e[0m
 
     If you guess incorrectly, you will be given clues for your next guess.
     HEREDOC
@@ -109,7 +102,6 @@ class BreakerRound < Game
       current_guess = ask_player
       display_guess(current_guess, @turn_counter)
       display_clues(current_code, current_guess)
-      #puts "Debugging hint: the original code should still be #{@code.secret_code}" # Keep for debugging and delete later
       break if correct_guess(current_code, current_guess)
       break if check_counter_12
     end
@@ -147,29 +139,35 @@ class BreakerRound < Game
     clue_code = current_code.slice(0..-1)
     clue_guess = current_guess.slice(0..-1)
     check_clues(clue_code, clue_guess)
+    @exact_matches.times { print "\e[32m\!\e[0m " } #Print green exclammation mark
+    @number_matches.times { print "\e[91m\?\e[0m " } #Print red question mark
     puts
     show_keys
   end
 
   def check_clues(clue_code, clue_guess)
-    check_exclamations(clue_code, clue_guess)
-    check_questions(clue_code, clue_guess)
+    check_code = clue_code.slice(0..-1)
+    check_guess = clue_guess.slice(0..-1)
+    check_exclamations(check_code, check_guess)
+    check_questions(check_code, check_guess)
   end
 
-  def check_exclamations(clue_code, clue_guess)
-    clue_guess.each_with_index.map do |guess_char, index|
-      next unless clue_code[index] == guess_char
+  def check_exclamations(code, guess)
+    @exact_matches = 0
+    guess.each_with_index.map do |guess_char, index|
+      next unless code[index] == guess_char
 
-      print "\e[32m\!\e[0m " #Print green exclammation mark
-      clue_code[index] = '!'
-      clue_guess[index] = 'X'
+      @exact_matches += 1
+      code[index] = '!'
+      guess[index] = 'X'
     end
   end
 
-  def check_questions(clue_code, clue_guess)
-    clue_guess.each.map do |guess_char|
-      if clue_code.include? guess_char
-        print "\e[91m\?\e[0m " #Print red question mark
+  def check_questions(code, guess)
+    @number_matches = 0
+    guess.each.map do |guess_char|
+      if code.include? guess_char
+        @number_matches += 1
       end
     end
   end
@@ -233,7 +231,6 @@ class Player
       puts 'Enter 4 numbers between 1 - 6. Do not use spaces or commas. E.g. 1234'
       @inputted_code = gets.chomp.each_char.map { |c| c.to_i }
       break if check_valid
-
       puts "That's not valid."
     end
   end
@@ -245,7 +242,9 @@ end
 
 class MasterRound < BreakerRound
   
-  def initialize
+  def initialize  
+    @possible_candidates = [1, 2, 3, 4, 5, 6].repeated_permutation(4).to_a
+    @remaining_candidates = @possible_candidates.slice(0..-1)  
     @player = Player.new
     @player_code = ask_player
     start_master
@@ -253,6 +252,9 @@ class MasterRound < BreakerRound
 
   def start_master
     show_player_code
+    puts
+    puts 'The computer will now try to break your code...'
+    puts
     start_computer_turn
     continue
   end
@@ -264,34 +266,59 @@ class MasterRound < BreakerRound
   end
 
   def start_computer_turn
-    puts 'The computer will now try to break your code...'
-    puts
     guess_counter = 0
+    last_guess = [0, 0, 0, 0]
     loop do
-      computer_guess = take_guess
+      computer_guess = take_guess(guess_counter, last_guess)
       guess_counter += 1
-      display_guess(computer_guess, guess_counter)
-      display_clues(@player_code, computer_guess)
-      sleep(2)
-      if computer_guess == @player_code
-        puts 'Game over. The computer broke the code.'
-        break
-      elsif guess_counter == 12
-        puts 'You win! The computer failed to break the code.'
-        break
-      end
+      update_board(computer_guess, guess_counter)
+      break if winner_check(computer_guess, guess_counter)
+
+      last_guess = computer_guess.slice(0..-1)
     end
   end
 
-  def take_guess
-    Array.new(4) { rand(1..6) }
+  def update_board(computer_guess, guess_counter)
+    display_guess(computer_guess, guess_counter)
+    display_clues(@player_code, computer_guess)
+    sleep(2)
   end
 
-  def take_better_guess
-    Array.new(4) 
+  def winner_check(computer_guess, guess_counter)
+    if computer_guess == @player_code
+      puts 'Game over. The computer broke the code.'
+      true
+    elsif guess_counter == 12
+      puts 'You win! The computer failed to break the code.'
+      true
+    end
   end
 
+  def take_guess(guess_counter, last_guess)
+    if guess_counter.zero?
+      then [1, 1, 2, 2]
+    else
+      candidate_checker(last_guess)
+      @remaining_candidates.first
+    end
+  end
 
+  def candidate_checker(last_guess)
+    @possible_candidates.each do |candidate|
+      compare_feedback(candidate, last_guess)
+    end
+  end
+
+  def compare_feedback(candidate, last_guess)
+    feedback_candidate = candidate.slice(0..-1)
+    feedback_guess = last_guess.slice(0..-1)
+    check_clues(@player_code, last_guess)
+    last_feedback = [@exact_matches, @number_matches]
+    check_clues(feedback_candidate, feedback_guess)
+    test_feedback = [@exact_matches, @number_matches]
+    @remaining_candidates.delete(candidate) unless last_feedback == test_feedback
+    @remaining_candidates.delete(last_guess)
+  end
 end
 
 Game.new
