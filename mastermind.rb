@@ -174,7 +174,7 @@ class BreakerRound < Game
       display_guess(current_guess, @turn_counter)
       display_clues(current_code, current_guess)
       break if correct_guess(current_code, current_guess)
-      break if check_counter_12
+      break if check_counter_12(current_code)
     end
   end
 
@@ -193,11 +193,13 @@ class BreakerRound < Game
     current_code == current_guess
   end
 
-  def check_counter_12
+  def check_counter_12(current_code)
     if @turn_counter == 11
       puts 'WARNING: This is your final turn to guess.'
       puts
     elsif @turn_counter == 12
+      color_code(current_code)
+      puts
       puts 'Game over, you lose. Master. Minded.'
       puts
       true
@@ -318,15 +320,3 @@ class MasterRound < Game
 end
 
 Game.new
-
-# Bug:
-#
-# The Game class launches the MasterRound
-# The MasterRound asks Player to input the code
-# When the MasterRound is complete the Game class calls the continue method
-# The continue method will start a new game if a "y" is entered
-# Else it will end the program
-# Bug: After the Player inputs the code, they could type characters into Terminal
-       # The characters will not show during continue method question
-       # If Player does not delete these invisible characters the program ends
-
