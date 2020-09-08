@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-# Set up of rules, keys and chooses which round to play
+# Contains Mastermind game rules and round creation
 class Game
 
   def initialize
     show_rules
     show_keys
     choose_game
+    continue
   end
 
   def show_rules
@@ -65,60 +66,20 @@ class Game
   def new_master_round
     @master_round = MasterRound.new
   end
+
+  def continue
+    puts 'Continue? Enter y to start a new game.'
+    answer = gets.chomp
+    answer.downcase == 'y' ? choose_game : (puts 'Goodbye.')
+  end
 end
 
-# Creates a Code Breaker round with new code, new player, and loops through game
-class BreakerRound < Game
-
-  def initialize
-    @code = Code.new
-    @player = Player.new
-    @turn_counter = 0
-    start_game
-  end
-
-  def start_game
-    puts 'May the odds be ever in your favor.'
-    puts
-    puts 'The Code Master has chosen a code.'
-    puts
-    current_code = code
-    begin_game_loop(current_code)
-    continue
-  end
-
-  def increase_counter
-    @turn_counter += 1
-  end
-
-  def code
-    @code.secret_code.slice(0..-1)
-  end
-
-  def begin_game_loop(current_code)
-    puts "Debugging hint: the secret code is #{current_code}" # Keep for debugging and delete later
-    loop do
-      increase_counter
-      current_guess = ask_player
-      display_guess(current_guess, @turn_counter)
-      display_clues(current_code, current_guess)
-      break if correct_guess(current_code, current_guess)
-      break if check_counter_12
-    end
-  end
-
+# Game logic color codes and logic
+module GameLogic
+  
   def ask_player
     @player.enter_code
     @player.inputted_code
-  end
-
-  def display_guess(current_guess, counter)
-    puts
-    puts "Guess Number #{counter}: "
-    puts
-    color_code(current_guess)
-    puts
-    puts
   end
 
   def color_code(code)
@@ -135,19 +96,26 @@ class BreakerRound < Game
     end
   end
 
-  def display_clues(current_code, current_guess)
-    clue_code = current_code.slice(0..-1)
-    clue_guess = current_guess.slice(0..-1)
-    check_clues(clue_code, clue_guess)
+  def display_guess(guess, counter)
+    puts
+    puts "Guess Number #{counter}: "
+    puts
+    color_code(guess)
+    puts
+    puts
+  end
+
+  def display_clues(code, guess)
+    check_clues(code, guess)
     @exact_matches.times { print "\e[32m\!\e[0m " } #Print green exclammation mark
     @number_matches.times { print "\e[91m\?\e[0m " } #Print red question mark
     puts
     show_keys
   end
 
-  def check_clues(clue_code, clue_guess)
-    check_code = clue_code.slice(0..-1)
-    check_guess = clue_guess.slice(0..-1)
+  def check_clues(code, guess)
+    check_code = code.slice(0..-1)
+    check_guess = guess.slice(0..-1)
     check_exclamations(check_code, check_guess)
     check_questions(check_code, check_guess)
   end
@@ -166,9 +134,47 @@ class BreakerRound < Game
   def check_questions(code, guess)
     @number_matches = 0
     guess.each.map do |guess_char|
-      if code.include? guess_char
-        @number_matches += 1
-      end
+      @number_matches += 1 if code.include? guess_char
+    end
+  end
+end
+
+# Creates a Code Breaker round with new code, new player, and loops through game
+class BreakerRound < Game
+  include GameLogic
+
+  def initialize
+    @code = Code.new
+    @player = Player.new
+    @turn_counter = 0
+    start_game
+  end
+
+  def start_game
+    puts 'May the odds be ever in your favor.'
+    puts
+    puts 'The Code Master has chosen a code.'
+    puts
+    current_code = code
+    begin_game_loop(current_code)
+  end
+
+  def increase_counter
+    @turn_counter += 1
+  end
+
+  def code
+    @code.secret_code.slice(0..-1)
+  end
+
+  def begin_game_loop(current_code)
+    loop do
+      increase_counter
+      current_guess = ask_player
+      display_guess(current_guess, @turn_counter)
+      display_clues(current_code, current_guess)
+      break if correct_guess(current_code, current_guess)
+      break if check_counter_12
     end
   end
 
@@ -197,19 +203,6 @@ class BreakerRound < Game
       true
     end
   end
-
-  def continue
-    puts 'Continue? Enter y to start a new game.'
-    answer = gets.chomp
-    if answer.downcase == 'y'
-      puts
-      puts "Let's play again."
-      puts
-      choose_game
-    else
-      puts 'Goodbye.'
-    end
-  end
 end
 
 # Generates random secret_code for the Code Breaker round
@@ -219,10 +212,9 @@ class Code
   def initialize
     @secret_code = Array.new(4) { rand(1..6) }
   end
-
 end
 
-# Creates human player and takes in guesses for the Code Breaker round
+# Creates human player and takes in guesses
 class Player
   attr_reader :inputted_code
 
@@ -240,7 +232,9 @@ class Player
   end
 end
 
-class MasterRound < BreakerRound
+# Creates a Code Master round with computer guessing logic
+class MasterRound < Game
+  include GameLogic
   
   def initialize  
     @possible_candidates = [1, 2, 3, 4, 5, 6].repeated_permutation(4).to_a
@@ -256,7 +250,6 @@ class MasterRound < BreakerRound
     puts 'The computer will now try to break your code...'
     puts
     start_computer_turn
-    continue
   end
 
   def show_player_code
@@ -312,13 +305,28 @@ class MasterRound < BreakerRound
   def compare_feedback(candidate, last_guess)
     feedback_candidate = candidate.slice(0..-1)
     feedback_guess = last_guess.slice(0..-1)
+
     check_clues(@player_code, last_guess)
     last_feedback = [@exact_matches, @number_matches]
+
     check_clues(feedback_candidate, feedback_guess)
     test_feedback = [@exact_matches, @number_matches]
+
     @remaining_candidates.delete(candidate) unless last_feedback == test_feedback
     @remaining_candidates.delete(last_guess)
   end
 end
 
 Game.new
+
+# Bug:
+#
+# The Game class launches the MasterRound
+# The MasterRound asks Player to input the code
+# When the MasterRound is complete the Game class calls the continue method
+# The continue method will start a new game if a "y" is entered
+# Else it will end the program
+# Bug: After the Player inputs the code, they could type characters into Terminal
+       # The characters will not show during continue method question
+       # If Player does not delete these invisible characters the program ends
+
