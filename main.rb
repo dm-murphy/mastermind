@@ -7,4 +7,4 @@ require_relative 'code.rb'
 require_relative 'player.rb'
 require_relative 'master_round.rb'
 
-Game.new
+Game.new.play_game
