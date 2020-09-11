@@ -3,6 +3,8 @@
 
 # Game logic color codes and logic
 module GameLogic
+  @exact_matches = 0
+  @number_matches = 0
   
   def ask_player
     @player.enter_code
