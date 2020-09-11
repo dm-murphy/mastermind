@@ -3,16 +3,12 @@
 # Contains Mastermind game rules and round creation
 class Game
 
-  def initialize
-    play_game
-  end
-
   def play_game
     loop do
       show_rules
       show_keys
       choose_game
-      break unless continue
+      break unless continue?
     end
     puts 'Goodbye.'
   end
@@ -68,16 +64,17 @@ class Game
 
   def new_breaker_round
     @breaker_round = BreakerRound.new
+    @breaker_round.start_breaker
   end
 
   def new_master_round
     @master_round = MasterRound.new
+    @master_round.start_master
   end
 
-  def continue
+  def continue?
     puts 'Continue? Enter y to start a new game.'
     answer = gets.chomp
-    #answer.downcase == 'y' ? play_game : (puts 'Goodbye.')
-    answer.downcase == 'y' ? true : false
+    answer.downcase == 'y'
   end
 end
