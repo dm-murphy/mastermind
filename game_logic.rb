@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 # Game logic color codes and logic
 module GameLogic
   @exact_matches = 0
