@@ -8,10 +8,11 @@ class BreakerRound < Game
     @code = Code.new
     @player = Player.new
     @turn_counter = 0
-    start_game
+    @exact_matches = 0
+    @number_matches = 0
   end
 
-  def start_game
+  def start_breaker
     puts 'May the odds be ever in your favor.'
     puts
     puts 'The Code Master has chosen a code.'
@@ -34,13 +35,13 @@ class BreakerRound < Game
       current_guess = ask_player
       display_guess(current_guess, @turn_counter)
       display_clues(current_code, current_guess)
-      break if correct_guess(current_code, current_guess)
-      break if check_counter_12(current_code)
+      break if check_guess?(current_code, current_guess)
+      break if check_counter_12?(current_code)
     end
   end
 
-  def correct_guess(current_code, current_guess)
-    if check_guess(current_code, current_guess)
+  def check_guess?(current_code, current_guess)
+    if correct_guess?(current_code, current_guess)
       puts 'Correct. Master. Mind.'
       puts
       true
@@ -50,20 +51,20 @@ class BreakerRound < Game
     end
   end
 
-  def check_guess(current_code, current_guess)
+  def correct_guess?(current_code, current_guess)
     current_code == current_guess
   end
 
-  def check_counter_12(current_code)
-    if @turn_counter == 11
-      puts 'WARNING: This is your final turn to guess.'
-      puts
-    elsif @turn_counter == 12
+  def check_counter_12?(current_code)
+    if @turn_counter == 12
       color_code(current_code)
       puts
       puts 'Game over, you lose. Master. Minded.'
       puts
-      true
+      true  
+    elsif @turn_counter == 11
+      puts 'WARNING: This is your final turn to guess.'
+      puts
     end
   end
 end
