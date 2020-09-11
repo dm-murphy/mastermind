@@ -4,7 +4,7 @@ View the [details](https://www.theodinproject.com/courses/ruby-programming/lesso
 
 ### Play
 
-Play this Mastermind game on [repl.it](https://repl.it/@dmmurphy/MasterMind#game.rb)
+Play this Mastermind game on [repl.it](https://repl.it/@dmmurphy/RefactoredMasterMind#main.rb)
 
 ### Project
 
