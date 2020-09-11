@@ -9,7 +9,8 @@ class MasterRound < Game
     @remaining_candidates = @possible_candidates.slice(0..-1)  
     @player = Player.new
     @player_code = ask_player
-    start_master
+    @exact_matches = 0
+    @number_matches = 0
   end
 
   def start_master
@@ -33,7 +34,7 @@ class MasterRound < Game
       computer_guess = take_guess(guess_counter, last_guess)
       guess_counter += 1
       update_board(computer_guess, guess_counter)
-      break if winner_check(computer_guess, guess_counter)
+      break if winner_check?(computer_guess, guess_counter)
 
       last_guess = computer_guess.slice(0..-1)
     end
@@ -45,7 +46,7 @@ class MasterRound < Game
     sleep(2)
   end
 
-  def winner_check(computer_guess, guess_counter)
+  def winner_check?(computer_guess, guess_counter)
     if computer_guess == @player_code
       puts 'Game over. The computer broke the code.'
       true
