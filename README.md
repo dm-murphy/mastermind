@@ -1,6 +1,6 @@
 # Mastermind
 
-View the [details](https://www.theodinproject.com/courses/ruby-programming/lessons/oop) on this object-oriented programming project from The Odin Project's Ruby course.
+View the [details](https://www.theodinproject.com/paths/full-stack-ruby-on-rails/courses/ruby-programming/lessons/mastermind) on this object-oriented programming project from The Odin Project's Ruby course.
 
 ### Play
 
